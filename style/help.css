@@ -86,3 +86,8 @@ footer {
     align-items: center;
     color: white;
 }
+
+/*******************/
+.help_hookname {
+    color: red;
+}

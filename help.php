@@ -48,13 +48,7 @@ if ($action == 'find') {
                     $hooksArray = preg_split('/[\s,]+/', $hooks, -1, PREG_SPLIT_NO_EMPTY);
                     $findPost = strtolower($findPost);
 
-                    $hookList = [];
-                    foreach ($hooksArray as $hook) {
-                        $findPost = str_replace(',', '', $findPost);
-                        if (strpos($findPost, $hook) !== false) {
-                            $hookList[] = $hook;
-                        }
-                    }
+                    $hookList = isWhatHook($findPost);
                     if (!empty($hookList)) {
                         $hookused = '';
                         $count = 0;
@@ -89,6 +83,34 @@ if ($action == 'find') {
                     if (preg_match('/creer un context/', $findPost)) {
                         $responseRight = "La récupération des contexts :<br>";
                         $responseRight .= "\$contexts = explode(':', \$parameters['context']);<br>";
+                    }
+                    if (preg_match('/\bquelle\b\s*([^?]+)/i', $findPost, $matches)) {
+                        $question = trim($matches[1]);
+                        switch (true){
+                            case preg_match('/hook utiliser pour la page/', $question):
+                                $hook = isWhatHook($findPost);
+                                $count = 0;
+                                if (count($hook) > 1) {
+                                    $hookTab = [];
+                                    $hooktxt = '';
+                                    $hookname = '<span class="help_hookname">';
+                                    foreach ($hook as $hk) {
+                                        $hookPage = whatPageItIs($hk);
+                                        $hooktxt .= $hookPage;
+                                        if ($count < count($hook) - 1) {
+                                            $hooktxt .= ', ';
+                                        }
+                                        $count++;
+                                        $hookname .= ' ' . $hk;
+                                    }
+                                    $hookname .=  '</span> ';
+                                    $responseQuestion = 'Si vous recherchez la page qui utilise ce hook '.$hookname . ' : '.$hooktxt;
+                                } else {
+                                    $hookPage = whatPageItIs($hook[0]);
+                                    $responseQuestion = 'Si vous recherchez la page qui utilise ce hook '.$hook[0].' : '.$hookPage;
+                                }
+                        }
+                        // $responseQuestion = trim(str_replace(["\n", "\r"], '', $responseQuestion));
                     }
                 }
                 if (preg_match('/droit/', $findPost) ||preg_match('/right/', $findPost) || preg_match('/hasRight/', $findPost)) {
@@ -133,7 +155,25 @@ if ($action == 'find') {
         if (!empty($responseRight)) {
             $response .= $responseRight;
         }
+        if (!empty($responseQuestion)) {
+            $response .= $responseQuestion;
+        }
     }    
+}
+
+function isWhatHook($text) {
+    $hooks = file_get_contents('hooks.txt');
+    $hooksArray = preg_split('/[\s,]+/', $hooks, -1, PREG_SPLIT_NO_EMPTY);
+    $text = strtolower($text);
+
+    $hookList = [];
+    foreach ($hooksArray as $hook) {
+        $text = str_replace(',', '', $text);
+        if (strpos($text, $hook) !== false) {
+            $hookList[] = $hook;
+        }
+    }
+    return $hookList;
 }
 
 function isQuestion($text) {
@@ -166,6 +206,151 @@ function isCapitale($text) {
     }
 
     return !empty($foundCapitales) ? $foundCapitales : false;
+}
+
+function whatPageItIs($text) {
+    switch ($text) {
+        case 'membercard':
+        case 'membertypecard':
+            $term = 'Member';
+            break;
+        case 'categorycard':
+            $term = 'Category';
+            break;
+        case 'commcard':
+            $term = 'Communication';
+            break;
+        case 'propalcard':
+            $term = 'Proposal';
+            break;
+        case 'actioncard':
+            $term = 'Action';
+            break;
+        case 'agenda':
+            $term = 'Agenda';
+            break;
+        case 'mailingcard':
+            $term = 'Mailing';
+            break;
+        case 'ordercard':
+            $term = 'Order';
+            break;
+        case 'invoicecard':
+            $term = 'Invoice';
+            break;
+        case 'paiementcard':
+            $term = 'Payment';
+            break;
+        case 'tripsandexpensescard':
+            $term = 'Trips and Expenses';
+            break;
+        case 'doncard':
+            $term = 'Donation';
+            break;
+        case 'externalbalance':
+            $term = 'External Balance';
+            break;
+        case 'salarycard':
+            $term = 'Salary';
+            break;
+        case 'taxvatcard':
+            $term = 'Tax/VAT';
+            break;
+        case 'contactcard':
+            $term = 'Contact';
+            break;
+        case 'contractcard':
+            $term = 'Contract';
+            break;
+        case 'expeditioncard':
+            $term = 'Expedition';
+            break;
+        case 'interventioncard':
+            $term = 'Intervention';
+            break;
+        case 'suppliercard':
+            $term = 'Supplier';
+            break;
+        case 'ordersuppliercard':
+        case 'orderstoinvoicesupplier':
+            $term = 'Supplier Orders';
+            break;
+        case 'invoicesuppliercard':
+            $term = 'Supplier Invoices';
+            break;
+        case 'paymentsupplier':
+            $term = 'Supplier Payments';
+            break;
+        case 'deliverycard':
+            $term = 'Delivery';
+            break;
+        case 'productcard':
+            $term = 'Product';
+            break;
+        case 'productcompositioncard':
+            $term = 'Product Composition';
+            break;
+        case 'pricesuppliercard':
+            $term = 'Price Supplier';
+            break;
+        case 'productstatsorder':
+            $term = 'Product Stats Order';
+            break;
+        case 'productstatssupplyorder':
+            $term = 'Product Stats Supply Order';
+            break;
+        case 'productstatscontract':
+            $term = 'Product Stats Contract';
+            break;
+        case 'productstatsinvoice':
+            $term = 'Product Stats Invoice';
+            break;
+        case 'productstatssupplyinvoice':
+            $term = 'Product Stats Supply Invoice';
+            break;
+        case 'productstatspropal':
+            $term = 'Product Stats Proposal';
+            break;
+        case 'warehousecard':
+            $term = 'Warehouse';
+            break;
+        case 'projectcard':
+            $term = 'Project';
+            break;
+        case 'projecttaskcard':
+            $term = 'Project Task';
+            break;
+        case 'resource_card':
+        case 'element_resource':
+            $term = 'Resource Card';
+            break;
+        case 'agendathirdparty':
+            $term = 'Agenda Third Party';
+            break;
+        case 'salesrepresentativescard':
+            $term = 'Sales Representatives';
+            break;
+        case 'consumptionthirdparty':
+            $term = 'Consumption Third Party';
+            break;
+        case 'infothirdparty':
+            $term = 'Info Third Party';
+            break;
+        case 'thirdpartycard':
+            $term = 'Third Party';
+            break;
+        case 'usercard':
+        case 'userlist':
+            $term = 'User';
+            break;
+        case 'passwordforgottenpage':
+            $term = 'Password Forgotten Page';
+            break;
+        default:
+            $term = 'Page inconnue';
+            break;
+    }
+    return $term;
 }
 // $text = 'if (array_intersect(['bookkeepingbyaccountlist', 'bookkeepinglist'], $contexts)) {
 // 			$removeAllFilters = (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')); // All tests are required to be compatible with all browsers
@@ -211,13 +396,15 @@ $question = 'Creer moi une fonctionnalite/ qui me permeterai de supprimer un POS
             </div>
                     
             <div class="help_response">
-                <?php if (!empty($response)):
+                <p>
+                     <?php if (!empty($response)):
                     echo $response;
                         ?>
                     </p>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </p>
             </div>
-            
+
             <form action="" method="POST">
                 <div>
                     <input type="text" name="help_input" placeholder="Message Doli'Help" value="<?php if(!empty($findPost)) : echo $findPost; endif ?>">
