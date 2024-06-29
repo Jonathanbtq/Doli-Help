@@ -91,3 +91,6 @@ footer {
 .help_hookname {
     color: red;
 }
+.bolder {
+    font-weight: bold;
+}

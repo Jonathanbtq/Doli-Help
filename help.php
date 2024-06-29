@@ -48,7 +48,7 @@ if ($action == 'find') {
                     $hooksArray = preg_split('/[\s,]+/', $hooks, -1, PREG_SPLIT_NO_EMPTY);
                     $findPost = strtolower($findPost);
 
-                    $hookList = isWhatHook($findPost);
+                    $hookList = isWhatHook($findPost, 'hook');
                     if (!empty($hookList)) {
                         $hookused = '';
                         $count = 0;
@@ -84,31 +84,105 @@ if ($action == 'find') {
                         $responseRight = "La récupération des contexts :<br>";
                         $responseRight .= "\$contexts = explode(':', \$parameters['context']);<br>";
                     }
-                    if (preg_match('/\bquelle\b\s*([^?]+)/i', $findPost, $matches)) {
+                    if (preg_match('/\bquelle\b\s*([^?]+)/i', $findPost, $matches) || preg_match('/\bquel\b\s*([^?]+)/i', $findPost, $matches)) {
                         $question = trim($matches[1]);
-                        switch (true){
-                            case preg_match('/hook utiliser pour la page/', $question):
-                                $hook = isWhatHook($findPost);
-                                $count = 0;
+                        $result = checkWordsInPhrase($findPost);
+                        $patternsHook = [
+                            '/\bquel\b.*\bhook\b.*\bpour\b.*\bcette page\b/i',    // Quel hook pour cette page ?
+                            '/\bquel\b.*\bhook\b.*\bpour\b.*\bpage\b/i',           // Quel hook pour cette page X ?
+                            '/\bquel\b.*\bhook\b.*\butiliser\b.*\bpour\b.*\bpage\b/i',  // Quel hook utiliser pour la page X ?
+                            '/\bquel\b.*\bhook\b.*\bsera utilisé\b.*\bpour\b.*\bpage\b/i',  // Quel hook sera utilisé pour la page X ?
+                            '/\bquel\b.*\bhook\b.*\bserait utilisé\b.*\bpour\b.*\bpage\b/i',  // Quel hook serait utilisé pour la page X ?
+                            '/\bquel\b.*\bhook\b.*\bsera utilisé\b.*\bsur\b.*\bpage\b/i',    // Quel hook sera utilisé sur la page X ?
+                        ];
+
+                        $matched = false;
+
+                        var_dump($question);
+                        foreach ($patternsHook as $pattern) {
+                            if (preg_match($pattern, 'quel '.$question)) {
+                                $matched = true;
+                                break;
+                            }
+                        }
+
+                        if ($matched) {
+                            /**
+                             * Quel hook sera utilisé pour cette page
+                             */
+                            $hook = isWhatHook($findPost, 'page');
+                            $count = 0;
+                            if (!empty($hook)) {
                                 if (count($hook) > 1) {
                                     $hookTab = [];
                                     $hooktxt = '';
+                                    $hooktxt .= '<br>';
                                     $hookname = '<span class="help_hookname">';
                                     foreach ($hook as $hk) {
-                                        $hookPage = whatPageItIs($hk);
-                                        $hooktxt .= $hookPage;
+                                        $hookname .= ' "' . $hk . '"';
+                                        $hookPage = whatHookItIs(strtolower($hk));
+                                        $hooktxt .= '<span class="bolder">'.$hookPage.'</span>';
                                         if ($count < count($hook) - 1) {
                                             $hooktxt .= ', ';
+                                            $hookname .= ' - ';
                                         }
                                         $count++;
-                                        $hookname .= ' ' . $hk;
                                     }
                                     $hookname .=  '</span> ';
-                                    $responseQuestion = 'Si vous recherchez la page qui utilise ce hook '.$hookname . ' : '.$hooktxt;
+                                    $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hookname . ' : '.$hooktxt;
                                 } else {
-                                    $hookPage = whatPageItIs($hook[0]);
-                                    $responseQuestion = 'Si vous recherchez la page qui utilise ce hook '.$hook[0].' : '.$hookPage;
+                                    var_dump(strtolower($hook[0]));
+                                    $hookPage = whatHookItIs(strtolower($hook[0]));
+                                    var_dump($hookPage);
+                                    $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hook[0].' : '.$hookPage;
                                 }
+                            }
+                        }
+
+                        // Utilisation de preg_match pour identifier les motifs clés
+                        if (preg_match('/fonction.*hook/i', $question)) {
+                            echo "Les hooks dans Dolibarr permettent de personnaliser le comportement de l'application en interceptant certaines actions.\n";
+                        } elseif (preg_match('/différence.*trigger.*hook/i', $question)) {
+                            echo "Un trigger est déclenché par une action spécifique, tandis qu'un hook intercepte et modifie le comportement d'une action existante dans Dolibarr.\n";
+                        } elseif (preg_match('/\bquel\b.*\bpage\b.*\butilise\b.*\bhook\b/i', $question)) {
+                            /**
+                             * Quel page pour ce hook
+                             */
+                            $hook = isWhatHook($findPost, 'page');
+                            $count = 0;
+                            if (!empty($hook)) {
+                                if (count($hook) > 1) {
+                                    $hookTab = [];
+                                    $hooktxt = '';
+                                    $hooktxt .= '<br>';
+                                    $hookname = '<span class="help_hookname">';
+                                    foreach ($hook as $hk) {
+                                        $hookname .= ' "' . $hk . '"';
+                                        $hookPage = getCardName(strtolower($hk));
+                                        $hooktxt .= '<span class="bolder">'.$hookPage.'</span>';
+                                        if ($count < count($hook) - 1) {
+                                            $hooktxt .= ', ';
+                                            $hookname .= ' - ';
+                                        }
+                                        $count++;
+                                    }
+                                    $hookname .=  '</span> ';
+                                    $responseQuestion = '<br>Si vous recherchez la page qui utilise ce hook '.$hookname . ' : '.$hooktxt;
+                                } else {
+                                    var_dump(strtolower($hook[0]));
+                                    $hookPage = getCardName(strtolower($hook[0]));
+                                    var_dump($hookPage);
+                                    $responseQuestion = '<br>Si vous recherchez la page qui utilise ce hook '.$hook[0].' : '.$hookPage;
+                                }
+                            }
+                        } elseif (preg_match('/personnaliser.*page.*commande/i', $question)) {
+                            echo "Pour personnaliser la page de commande dans Dolibarr, utilisez le hook approprié dédié à cette fonctionnalité.\n";
+                        } elseif (preg_match('/liste.*complète.*hooks/i', $question)) {
+                            echo "La liste complète des hooks disponibles dans Dolibarr peut être trouvée dans la documentation officielle ou dans le code source de l'application.\n";
+                        } elseif (preg_match('/hook.*création.*utilisateur/i', $question)) {
+                            echo "Lors de la création d'un utilisateur dans Dolibarr, le hook approprié à utiliser dépendra du moment où vous souhaitez interagir avec le processus de création.\n";
+                        } else {
+                            echo "Désolé, je ne peux pas répondre à cette question spécifique sur les hooks dans Dolibarr.\n";
                         }
                         // $responseQuestion = trim(str_replace(["\n", "\r"], '', $responseQuestion));
                     }
@@ -161,18 +235,50 @@ if ($action == 'find') {
     }    
 }
 
-function isWhatHook($text) {
-    $hooks = file_get_contents('hooks.txt');
+function checkWordsInPhrase($phrase) {
+    $phrase = strtolower($phrase);
+    $wordFrequency = [];
+
+    $words = preg_split('/[\s,.;:!?]+/', $phrase, -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($words as $word) {
+        if (array_key_exists($word, $wordFrequency)) {
+            $wordFrequency[$word]++;
+        } else {
+            $wordFrequency[$word] = 1;
+        }
+        
+    }
+
+    arsort($wordFrequency);
+
+    return $wordFrequency;
+}
+
+/**
+ * Permet la detection de mot qui correspondent a des hook
+ *
+ * @param [type] $text
+ * @param [type] $type
+ * @return array
+ */
+function isWhatHook($text, $type) {
+    if ($type === 'page') {
+        $hooks = file_get_contents('page.txt');
+    } else {
+        $hooks = file_get_contents('hooks.txt');
+    }
+
     $hooksArray = preg_split('/[\s,]+/', $hooks, -1, PREG_SPLIT_NO_EMPTY);
     $text = strtolower($text);
-
     $hookList = [];
     foreach ($hooksArray as $hook) {
         $text = str_replace(',', '', $text);
-        if (strpos($text, $hook) !== false) {
+        // Vérifier l'existance du hook dans la phrase
+        if (strpos($text, strtolower($hook)) !== false) {
             $hookList[] = $hook;
         }
     }
+
     return $hookList;
 }
 
@@ -208,149 +314,230 @@ function isCapitale($text) {
     return !empty($foundCapitales) ? $foundCapitales : false;
 }
 
-function whatPageItIs($text) {
+/**
+ * Récupération de la page en fonction du hook
+ *
+ * @param [type] $text
+ * @return void
+ */
+function getCardName($text) {
+    $cards = [
+        'membercard' => 'member',
+        'membertypecard' => 'member',
+        'categorycard' => 'category',
+        'commcard' => 'communication',
+        'propalcard' => 'proposal',
+        'actioncard' => 'action',
+        'agenda' => 'agenda',
+        'mailingcard' => 'mailing',
+        'ordercard' => 'order',
+        'invoicecard' => 'invoice',
+        'paiementcard' => 'payment',
+        'tripsandexpensescard' => 'tripsandexpenses',
+        'doncard' => 'donation',
+        'externalbalance' => 'externalbalance',
+        'salarycard' => 'salary',
+        'taxvatcard' => 'taxvat',
+        'contactcard' => 'contact',
+        'contractcard' => 'contract',
+        'expeditioncard' => 'expedition',
+        'interventioncard' => 'intervention',
+        'suppliercard' => 'supplier',
+        'ordersuppliercard' => 'supplierorders',
+        'orderstoinvoicesupplier' => 'supplierorders',
+        'invoicesuppliercard' => 'supplierinvoices',
+        'paymentsupplier' => 'supplierpayments',
+        'deliverycard' => 'delivery',
+        'productcard' => 'product',
+        'productcompositioncard' => 'productcomposition',
+        'pricesuppliercard' => 'pricesupplier',
+        'productstatsorder' => 'productstatsorder',
+        'productstatssupplyorder' => 'productstatssupplyorder',
+        'productstatscontract' => 'productstatscontract',
+        'productstatsinvoice' => 'productstatsinvoice',
+        'productstatssupplyinvoice' => 'productstatssupplyinvoice',
+        'productstatspropal' => 'productstatsproposal',
+        'warehousecard' => 'warehouse',
+        'projectcard' => 'project',
+        'projecttaskcard' => 'projecttask',
+        'resource_card' => 'resource',
+        'element_resource' => 'resource',
+        'agendathirdparty' => 'agendathirdparty',
+        'salesrepresentativescard' => 'salesrepresentatives',
+        'consumptionthirdparty' => 'consumptionthirdparty',
+        'infothirdparty' => 'infothirdparty',
+        'thirdpartycard' => 'thirdparty',
+        'usercard' => 'user',
+        'userlist' => 'user',
+        'passwordforgottenpage' => 'passwordforgottenpage',
+    ];
+
+    return isset($cards[$text]) ? $cards[$text] : 'Page inconnue';
+}
+
+
+/**
+ * Récupération du hook en fonction de la page
+ *
+ * @param [type] $text
+ * @return void
+ */
+function whatHookItIs($text) {
     switch ($text) {
-        case 'membercard':
-        case 'membertypecard':
-            $term = 'Member';
+        case 'member':
+        case 'membre':
+            $desc = 'membercard, membertypecard';
             break;
-        case 'categorycard':
-            $term = 'Category';
+        case 'category':
+        case 'categorie':
+            $desc = 'categorycard';
             break;
-        case 'commcard':
-            $term = 'Communication';
+        case 'communication':
+            $desc = 'commcard';
             break;
-        case 'propalcard':
-            $term = 'Proposal';
+        case 'proposal':
+        case 'propal':
+        case 'proposition commercial':
+            $desc = 'propalcard';
             break;
-        case 'actioncard':
-            $term = 'Action';
+        case 'action':
+            $desc = 'actioncard';
             break;
         case 'agenda':
-            $term = 'Agenda';
+            $desc = 'agenda';
             break;
-        case 'mailingcard':
-            $term = 'Mailing';
+        case 'mailing':
+            $desc = 'mailingcard';
             break;
-        case 'ordercard':
-            $term = 'Order';
+        case 'order':
+        case 'commande':
+            $desc = 'ordercard';
             break;
-        case 'invoicecard':
-            $term = 'Invoice';
+        case 'invoice':
+        case 'facture':
+            $desc = 'invoicecard';
             break;
-        case 'paiementcard':
-            $term = 'Payment';
+        case 'payment':
+        case 'paiement':
+            $desc = 'paiementcard';
             break;
-        case 'tripsandexpensescard':
-            $term = 'Trips and Expenses';
+        case 'tripsandexpenses':
+            $desc = 'tripsandexpensescard';
             break;
-        case 'doncard':
-            $term = 'Donation';
+        case 'donation':
+            $desc = 'doncard';
             break;
         case 'externalbalance':
-            $term = 'External Balance';
+            $desc = 'externalbalance';
             break;
-        case 'salarycard':
-            $term = 'Salary';
+        case 'salary':
+        case 'salaire':
+            $desc = 'salarycard';
             break;
-        case 'taxvatcard':
-            $term = 'Tax/VAT';
+        case 'taxvat':
+            $desc = 'taxvatcard';
             break;
-        case 'contactcard':
-            $term = 'Contact';
+        case 'contact':
+            $desc = 'contactcard';
             break;
-        case 'contractcard':
-            $term = 'Contract';
+        case 'contract':
+        case 'contrat':
+            $desc = 'contractcard';
             break;
-        case 'expeditioncard':
-            $term = 'Expedition';
+        case 'expedition':
+        case 'livraison':
+            $desc = 'expeditioncard';
             break;
-        case 'interventioncard':
-            $term = 'Intervention';
+        case 'intervention':
+            $desc = 'interventioncard';
             break;
-        case 'suppliercard':
-            $term = 'Supplier';
+        case 'supplier':
+        case 'fournisseur':
+            $desc = 'suppliercard';
             break;
-        case 'ordersuppliercard':
-        case 'orderstoinvoicesupplier':
-            $term = 'Supplier Orders';
+        case 'supplierorders':
+        case 'commandefournisseur':
+            $desc = 'ordersuppliercard, orderstoinvoicesupplier';
             break;
-        case 'invoicesuppliercard':
-            $term = 'Supplier Invoices';
+        case 'supplierinvoices':
+        case 'facturefournisseur':
+            $desc = 'invoicesuppliercard';
             break;
-        case 'paymentsupplier':
-            $term = 'Supplier Payments';
+        case 'supplierpayments':
+        case 'paiementfournisseur':
+            $desc = 'paymentsupplier';
             break;
-        case 'deliverycard':
-            $term = 'Delivery';
+        case 'delivery':
+            $desc = 'deliverycard';
             break;
-        case 'productcard':
-            $term = 'Product';
+        case 'product':
+        case 'produit':
+            $desc = 'productcard';
             break;
-        case 'productcompositioncard':
-            $term = 'Product Composition';
+        case 'productcomposition':
+            $desc = 'productcompositioncard';
             break;
-        case 'pricesuppliercard':
-            $term = 'Price Supplier';
+        case 'pricesupplier':
+            $desc = 'pricesuppliercard';
             break;
         case 'productstatsorder':
-            $term = 'Product Stats Order';
+            $desc = 'productstatsorder';
             break;
         case 'productstatssupplyorder':
-            $term = 'Product Stats Supply Order';
+            $desc = 'productstatssupplyorder';
             break;
         case 'productstatscontract':
-            $term = 'Product Stats Contract';
+            $desc = 'productstatscontract';
             break;
         case 'productstatsinvoice':
-            $term = 'Product Stats Invoice';
+            $desc = 'productstatsinvoice';
             break;
         case 'productstatssupplyinvoice':
-            $term = 'Product Stats Supply Invoice';
+            $desc = 'productstatssupplyinvoice';
             break;
-        case 'productstatspropal':
-            $term = 'Product Stats Proposal';
+        case 'productstatsproposal':
+            $desc = 'productstatspropal';
             break;
-        case 'warehousecard':
-            $term = 'Warehouse';
+        case 'warehouse':
+        case 'entrepot':
+            $desc = 'warehousecard';
             break;
-        case 'projectcard':
-            $term = 'Project';
+        case 'project':
+            $desc = 'projectcard';
             break;
-        case 'projecttaskcard':
-            $term = 'Project Task';
+        case 'projecttask':
+            $desc = 'projecttaskcard';
             break;
-        case 'resource_card':
-        case 'element_resource':
-            $term = 'Resource Card';
+        case 'resource':
+            $desc = 'resource_card, element_resource';
             break;
         case 'agendathirdparty':
-            $term = 'Agenda Third Party';
+            $desc = 'agendathirdparty';
             break;
-        case 'salesrepresentativescard':
-            $term = 'Sales Representatives';
+        case 'salesrepresentatives':
+            $desc = 'salesrepresentativescard';
             break;
         case 'consumptionthirdparty':
-            $term = 'Consumption Third Party';
+            $desc = 'consumptionthirdparty';
             break;
         case 'infothirdparty':
-            $term = 'Info Third Party';
+            $desc = 'infothirdparty';
             break;
-        case 'thirdpartycard':
-            $term = 'Third Party';
+        case 'thirdparty':
+        case 'entreprise':
+            $desc = 'thirdpartycard';
             break;
-        case 'usercard':
-        case 'userlist':
-            $term = 'User';
+        case 'user':
+            $desc = 'usercard, userlist';
             break;
         case 'passwordforgottenpage':
-            $term = 'Password Forgotten Page';
+            $desc = 'passwordforgottenpage';
             break;
         default:
-            $term = 'Page inconnue';
+            $desc = 'Page inconnue';
             break;
     }
-    return $term;
+    return $desc;
 }
 // $text = 'if (array_intersect(['bookkeepingbyaccountlist', 'bookkeepinglist'], $contexts)) {
 // 			$removeAllFilters = (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')); // All tests are required to be compatible with all browsers
