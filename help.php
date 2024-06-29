@@ -98,7 +98,6 @@ if ($action == 'find') {
 
                         $matched = false;
 
-                        var_dump($question);
                         foreach ($patternsHook as $pattern) {
                             if (preg_match($pattern, 'quel '.$question)) {
                                 $matched = true;
@@ -131,9 +130,7 @@ if ($action == 'find') {
                                     $hookname .=  '</span> ';
                                     $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hookname . ' : '.$hooktxt;
                                 } else {
-                                    var_dump(strtolower($hook[0]));
                                     $hookPage = whatHookItIs(strtolower($hook[0]));
-                                    var_dump($hookPage);
                                     $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hook[0].' : '.$hookPage;
                                 }
                             }
@@ -141,9 +138,9 @@ if ($action == 'find') {
 
                         // Utilisation de preg_match pour identifier les motifs clés
                         if (preg_match('/fonction.*hook/i', $question)) {
-                            echo "Les hooks dans Dolibarr permettent de personnaliser le comportement de l'application en interceptant certaines actions.\n";
+                            $responseDivers = "Les hooks dans Dolibarr permettent de personnaliser le comportement de l'application en interceptant certaines actions.\n";
                         } elseif (preg_match('/différence.*trigger.*hook/i', $question)) {
-                            echo "Un trigger est déclenché par une action spécifique, tandis qu'un hook intercepte et modifie le comportement d'une action existante dans Dolibarr.\n";
+                            $responseDivers = "Un trigger est déclenché par une action spécifique, tandis qu'un hook intercepte et modifie le comportement d'une action existante dans Dolibarr.\n";
                         } elseif (preg_match('/\bquel\b.*\bpage\b.*\butilise\b.*\bhook\b/i', $question)) {
                             /**
                              * Quel page pour ce hook
@@ -167,22 +164,25 @@ if ($action == 'find') {
                                         $count++;
                                     }
                                     $hookname .=  '</span> ';
-                                    $responseQuestion = '<br>Si vous recherchez la page qui utilise ce hook '.$hookname . ' : '.$hooktxt;
+                                    $responseDivers = '<br>Si vous recherchez la page qui utilise ce hook '.$hookname . ' : '.$hooktxt;
                                 } else {
                                     var_dump(strtolower($hook[0]));
                                     $hookPage = getCardName(strtolower($hook[0]));
                                     var_dump($hookPage);
-                                    $responseQuestion = '<br>Si vous recherchez la page qui utilise ce hook '.$hook[0].' : '.$hookPage;
+                                    $responseDivers = '<br>Si vous recherchez la page qui utilise ce hook '.$hook[0].' : '.$hookPage;
                                 }
                             }
                         } elseif (preg_match('/personnaliser.*page.*commande/i', $question)) {
-                            echo "Pour personnaliser la page de commande dans Dolibarr, utilisez le hook approprié dédié à cette fonctionnalité.\n";
+                            $responseDivers = "Pour personnaliser la page de commande dans Dolibarr, utilisez le hook approprié dédié à cette fonctionnalité.\n";
                         } elseif (preg_match('/liste.*complète.*hooks/i', $question)) {
-                            echo "La liste complète des hooks disponibles dans Dolibarr peut être trouvée dans la documentation officielle ou dans le code source de l'application.\n";
-                        } elseif (preg_match('/hook.*création.*utilisateur/i', $question)) {
-                            echo "Lors de la création d'un utilisateur dans Dolibarr, le hook approprié à utiliser dépendra du moment où vous souhaitez interagir avec le processus de création.\n";
+                            $responseDivers = file_get_contents('hooks.txt');
+                            $responseDivers = str_replace(', ', '<br>', $responseDivers);
+                        } elseif (preg_match('/hook.*création.*utilisateur/i', $question) || preg_match('/hook.*creation.*utilisateur/i', $question)) {
+                            $responseDivers = "Lors de la création d'un utilisateur dans Dolibarr, le hook approprié à utiliser dépendra du moment où vous souhaitez interagir avec le processus de création.\n";
                         } else {
-                            echo "Désolé, je ne peux pas répondre à cette question spécifique sur les hooks dans Dolibarr.\n";
+                            if (empty($responseQuestion)) {
+                                $responseDivers = "Désolé, je ne peux pas répondre à cette question spécifique sur les hooks dans Dolibarr.\n";
+                            }
                         }
                         // $responseQuestion = trim(str_replace(["\n", "\r"], '', $responseQuestion));
                     }
@@ -232,6 +232,9 @@ if ($action == 'find') {
         if (!empty($responseQuestion)) {
             $response .= $responseQuestion;
         }
+        if (!empty($responseDivers)) {
+            $response .= $responseDivers;
+        }
     }    
 }
 
@@ -270,11 +273,26 @@ function isWhatHook($text, $type) {
 
     $hooksArray = preg_split('/[\s,]+/', $hooks, -1, PREG_SPLIT_NO_EMPTY);
     $text = strtolower($text);
+    $text = str_replace(',', '', $text);
+
+    // Transformer le texte en tableau de mots, en séparant par les espaces
+    $words = explode(' ', $text);
+
+    // Remplacer 'facturefournisseur' par 'facturesfournisseur' dans le tableau des mots
+    foreach ($words as &$word) {
+        if ($word == 'facturesfournisseur') {
+            $word = 'facturefournisseur';
+        }
+    }
+    unset($word); // Unset la référence
+
+    // Reconstituer le texte modifié
+    $modifiedText = implode(' ', $words);
+
     $hookList = [];
     foreach ($hooksArray as $hook) {
-        $text = str_replace(',', '', $text);
-        // Vérifier l'existance du hook dans la phrase
-        if (strpos($text, strtolower($hook)) !== false) {
+        // Vérifier l'existence du hook dans le texte modifié
+        if (strpos($modifiedText, strtolower($hook)) !== false) {
             $hookList[] = $hook;
         }
     }
@@ -547,14 +565,6 @@ function whatHookItIs($text) {
 // 			}
 // 		}';
 
-$question = 'Creer moi une fonctionnalite/ qui me permeterai de supprimer un POST de ma page/ bookkeepingbyaccountlist et bookkeepinglist';
-// Premiere partie
-// Récupération du premier mot pour analyse.
-// creer ajouter verifier
-// Verifier si la phrase contient 'creer module', 'ajouter un module', 'module'
-// Deuxieme partie
-// Millieu de phrase
-// recherche de pleins de mots possible ()
 /**
  * VIEW
  */
@@ -580,6 +590,7 @@ $question = 'Creer moi une fonctionnalite/ qui me permeterai de supprimer un POS
         <div class="help_ctn">
             <div class="help_warning">
                 <p>Toujours coder dans un module, il n'est pas conseillé de modifier le core de Dolibarr, une mise à jours de ce dernier et votre code disparait</p>
+                <p>Pour une question, commencez votre phrase par "Quel" ou "Quelle" et finissez la par "?"</p>
             </div>
                     
             <div class="help_response">
