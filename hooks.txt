@@ -1,0 +1,5 @@
+membercard, membertypecard, categorycard, commcard, propalcard, actioncard, agenda, mailingcard, ordercard, invoicecard, paiementcard, tripsandexpensescard,
+doncard, externalbalance, salarycard, taxvatcard, contactcard, contractcard, expeditioncard, interventioncard, suppliercard, ordersuppliercard, orderstoinvoicesupplier,
+invoicesuppliercard, paymentsupplier, deliverycard, productcard, productcompositioncard, pricesuppliercard, productstatsorder, productstatssupplyorder, productstatscontract
+ productstatsinvoice, productstatssupplyinvoice, productstatspropal, warehousecard, projectcard, projecttaskcard, resource_card, element_resource, agendathirdparty,
+ salesrepresentativescard, consumptionthirdparty, infothirdparty, thirdpartycard, usercard, userlist, passwordforgottenpage

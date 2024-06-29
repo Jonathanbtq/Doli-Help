@@ -1,0 +1,13 @@
+Kaboul, Pretoria, Bloemfontein, Le Cap, Tirana, Alger, Berlin, Andorre-la-Vieille, Luanda, Saint John's, Riyad, Buenos Aires, Erevan, Canberra,
+Vienne, Bakou, Nassau, Manama, Dacca, Bridgetown, Minsk, Bruxelles, Belmopan, Porto-Novo, Thimphou, Sucre, La Paz, Sarajevo, Gaborone, Brasilia,
+Bandar Seri Begawan, Sofia, Ouagadougou, Gitega, Phnom Penh, Yaoundé, Ottawa, Praia, Bangui, N'Djamena, Santiago, Pékin, Bogota, Moroni,
+Brazzaville, Kinshasa, San José, Zagreb, La Havane, Nicosie, Copenhague, Djibouti, Roseau, Saint-Domingue, Quito, Le Caire, San Salvador,
+Malabo, Asmara, Tallinn, Mbabane, Lobamba, Addis-Abeba, Palikir, Suva, Helsinki, Paris, Libreville, Banjul, Tbilissi, Accra, Athènes, Saint-Georges,
+Guatemala, Conakry, Bissau, Georgetown, Port-au-Prince, Tegucigalpa, Budapest, Reykjavik, New Delhi, Jakarta, Téhéran, Bagdad, Dublin, Jérusalem,
+Rome, Kingston, Tokyo, Amman, Noursoultan, Nairobi, Tarawa-Sud, Pristina, Koweït, Bichkek, Vientiane, Riga, Beyrouth, Maseru, Monrovia, Tripoli,
+Vaduz, Vilnius, Luxembourg, Skopje, Antananarivo, Lilongwe, Kuala Lumpur, Putrajaya, Malé, Bamako, La Valette, Majuro, Nouakchott, Port-Louis, Mexico,
+Palikir, Chisinau, Monaco, Oulan-Bator, Podgorica, Rabat, Maputo, Windhoek, Yaren, Katmandou, Amsterdam, Wellington, Managua, Niamey, Abuja, Pyongyang,
+Skopje, Oslo, Mascate, Islamabad, Ngerulmud, Panama, Port Moresby, Asuncion, Lima, Manille, Varsovie, Lisbonne, Doha, Bucarest, Moscou, Kigali, Basseterre,
+Castries, Kingstown, Apia, Saint-Marin, Sao Tomé, Riyad, Dakar, Belgrade, Victoria, Freetown, Singapour, Bratislava, Ljubljana, Honiara, Mogadiscio, Séoul,
+Djouba, Madrid, Colombo, Khartoum, Paramaribo, Stockholm, Berne, Damas, Taipei, Douchanbé, Dodoma, Bangkok, Lomé, Nuku'alofa, Port-d'Espagne, Tunis, Ankara,
+Achgabat, Funafuti, Kampala, Kiev, Abu Dhabi, Londres, Washington, Montevideo, Tachkent, Port-Vila, Caracas, Hanoï, Sanaa, Lusaka, Harare
