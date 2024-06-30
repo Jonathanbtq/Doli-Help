@@ -12,6 +12,24 @@ $wordfindarray = ['trigger', 'triggers', 'hook', 'hooks'];
  */
 if ($action == 'find') {
     if (!empty($findPost)) {
+        $intention = getIntention($findPost);
+        switch($intention) {
+            case 'curiosité':
+                $humeurtxt = 'Pour répondre a votre intérrogation :';
+                break;
+            case 'frustration':
+                $humeurtxt = 'Je vois de la frustration dans votre message... ';
+                break;
+            case 'politesse':
+                $humeurtxt = 'Bien-sûr, ';
+                break;
+            case 'impatience':
+                $humeurtxt = 'Calmez-vous...';
+                break;
+            default:
+                $humeurtxt = '';
+                break;
+        }
         foreach ($wordfindarray as $mot) {
             $findPost = strtolower($findPost);
             if (isQuestion($findPost)) {
@@ -48,7 +66,7 @@ if ($action == 'find') {
                     $hooksArray = preg_split('/[\s,]+/', $hooks, -1, PREG_SPLIT_NO_EMPTY);
                     $findPost = strtolower($findPost);
 
-                    $hookList = isWhatHook($findPost, 'hook');
+                    $hookList = isWhatHook($findPost, 'hookused');
                     if (!empty($hookList)) {
                         $hookused = '';
                         $count = 0;
@@ -87,6 +105,8 @@ if ($action == 'find') {
                     if (preg_match('/\bquelle\b\s*([^?]+)/i', $findPost, $matches) || preg_match('/\bquel\b\s*([^?]+)/i', $findPost, $matches)) {
                         $question = trim($matches[1]);
                         $result = checkWordsInPhrase($findPost);
+
+                        // Question sur les hook a utiliser
                         $patternsHook = [
                             '/\bquel\b.*\bhook\b.*\bpour\b.*\bcette page\b/i',    // Quel hook pour cette page ?
                             '/\bquel\b.*\bhook\b.*\bpour\b.*\bpage\b/i',           // Quel hook pour cette page X ?
@@ -109,31 +129,39 @@ if ($action == 'find') {
                             /**
                              * Quel hook sera utilisé pour cette page
                              */
-                            $hook = isWhatHook($findPost, 'page');
-                            $count = 0;
-                            if (!empty($hook)) {
-                                if (count($hook) > 1) {
-                                    $hookTab = [];
-                                    $hooktxt = '';
-                                    $hooktxt .= '<br>';
-                                    $hookname = '<span class="help_hookname">';
-                                    foreach ($hook as $hk) {
-                                        $hookname .= ' "' . $hk . '"';
-                                        $hookPage = whatHookItIs(strtolower($hk));
-                                        $hooktxt .= '<span class="bolder">'.$hookPage.'</span>';
-                                        if ($count < count($hook) - 1) {
-                                            $hooktxt .= ', ';
-                                            $hookname .= ' - ';
-                                        }
-                                        $count++;
-                                    }
-                                    $hookname .=  '</span> ';
-                                    $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hookname . ' : '.$hooktxt;
-                                } else {
-                                    $hookPage = whatHookItIs(strtolower($hook[0]));
-                                    $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hook[0].' : '.$hookPage;
-                                }
+                            $responseQuestion = isWhatHook($findPost, 'page');
+                        }
+
+                        // Question sur les page a utiliser
+                        $patternsPage = [
+                            '/\bquelle\b.*\bpage\b.*\butilise\b.*\bce hook\b/i',    // Quelle page utilise ce hook ?
+                            '/\bquelle\b.*\bpage\b.*\butilise\b.*\ble hook\b/i',           // Quelle page utilise le hook X ?
+                            '/\bquel\b.*\bpage\b.*\butilise\b.*\bce hook\b/i',  // Quel page utilise ce hook ?
+                            '/\bquel\b.*\bpage\b.*\butilise\b.*\ble hook\b/i',  // Quel page utilise le hook X ?
+                            '/\bquelle est\b.*\bla page\b.*\bqui utilise\b.*\bce hook\b/i',  // Quelle est la page qui utilise ce hook ?
+                            '/\bquelle est\b.*\bla page\b.*\bqui utilise\b.*\ble hook\b/i',  // Quelle est la page qui utilise le hook X ?
+                            '/\bquel est\b.*\bla page\b.*\bqui utilise\b.*\bce hook\b/i',  // Quel est la page qui utilise ce hook ?
+                            '/\bquel est\b.*\bla page\b.*\bqui utilise\b.*\ble hook\b/i',  // Quel est la page qui utilise le hook X ?
+                            '/\bquelle\b.*\bpage\b.*\bfait usage de\b.*\bce hook\b/i',  // Quelle page fait usage de ce hook ?
+                            '/\bquelle\b.*\bpage\b.*\bfait usage de\b.*\ble hook\b/i',  // Quelle page fait usage du hook X ?
+                            '/\bquel(le)?\b.*\bpage\b.*\butilise\b.*\bhook\b/i',  // Quelle page fait usage du hook X ?
+                        ];
+
+                        $matched = false;
+
+                        foreach ($patternsHook as $pattern) {
+                            $question = 'quel '.$question;
+                            if (preg_match($pattern, $question)) {
+                                $matched = true;
+                                break;
                             }
+                        }
+
+                        if ($matched) {
+                            /**
+                             * Quel hook sera utilisé pour cette page
+                             */
+                            $responseQuestion = isWhatHook($findPost, 'page');
                         }
 
                         // Utilisation de preg_match pour identifier les motifs clés
@@ -145,7 +173,7 @@ if ($action == 'find') {
                             /**
                              * Quel page pour ce hook
                              */
-                            $hook = isWhatHook($findPost, 'page');
+                            $responseDivers = isWhatHook($findPost, 'page');
                             $count = 0;
                             if (!empty($hook)) {
                                 if (count($hook) > 1) {
@@ -288,7 +316,6 @@ function isWhatHook($text, $type) {
 
     // Reconstituer le texte modifié
     $modifiedText = implode(' ', $words);
-
     $hookList = [];
     foreach ($hooksArray as $hook) {
         // Vérifier l'existence du hook dans le texte modifié
@@ -296,8 +323,45 @@ function isWhatHook($text, $type) {
             $hookList[] = $hook;
         }
     }
+    if ($type == 'hookused') {
+        return $hookList;
+    }
 
-    return $hookList;
+    $count = 0;
+    $responseQuestion = '';
+    if (!empty($hookList)) {
+        if (count($hookList) > 1) {
+            $hookTab = [];
+            $hooktxt = '';
+            $hooktxt .= '<br>';
+            $hookname = '<span class="help_hookname">';
+            foreach ($hookList as $hk) {
+                $hookname .= ' "' . $hk . '"';
+                $hookPage = whatHookItIs(strtolower($hk));
+                $hooktxt .= '<span class="bolder">'.$hookPage.'</span>';
+                if ($count < count($hookList) - 1) {
+                    $hooktxt .= ', ';
+                    $hookname .= ' - ';
+                }
+                $count++;
+            }
+            $hookname .=  '</span> ';
+            if ($type === 'hook') {
+                $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hookname . ' : '.$hooktxt;
+            } else {
+                $responseQuestion = '<br>Si vous recherchez la page qui va avec ces hook '.$hookname . ' : '.$hooktxt;
+            }
+        } else {
+            $hookPage = whatHookItIs(strtolower($hookList[0]));
+            if ($type === 'hook') {
+                $responseQuestion = '<br>Si vous recherchez le hook Pour ces pages '.$hookList[0].' : '.$hookPage;
+            } else {
+                $responseQuestion = '<br>Si vous recherchez la page qui va avec ce hook '.$hookList[0].' : '.$hookPage;
+            }
+        }
+    }
+
+    return $responseQuestion;
 }
 
 function isQuestion($text) {
@@ -330,6 +394,51 @@ function isCapitale($text) {
     }
 
     return !empty($foundCapitales) ? $foundCapitales : false;
+}
+
+function getIntention($question) {
+    $question = strtolower($question);
+
+    // Mots-clés et phrases indicatives avec leurs poids
+    $keywords = [
+        'curiosité' => [
+            'comment' => 1, 'pourquoi' => 1, 'quel' => 1, 'quelle' => 1, 'où' => 1, 'quand' => 1
+        ],
+        'frustration' => [
+            'encore' => 1, 'toujours' => 1, 'jamais' => 1, 'pourquoi encore' => 2, '!' => 1
+        ],
+        'politesse' => [
+            'pourriez-vous' => 1, 's\'il vous plaît' => 1, 'svp' => 1, 'merci' => 1
+        ],
+        'impatience' => [
+            'quand' => 1, 'dépêchez-vous' => 2, 'vite' => 1, 'rapidement' => 1
+        ]
+    ];
+
+    $scores = [
+        'curiosité' => 0,
+        'frustration' => 0,
+        'politesse' => 0,
+        'impatience' => 0
+    ];
+
+    // Calculer les scores pour chaque humeur
+    foreach ($keywords as $mood => $words) {
+        foreach ($words as $word => $weight) {
+            if (strpos($question, $word) !== false) {
+                $scores[$mood] += $weight;
+            }
+        }
+    }
+
+    if (strtoupper($question) === $question && preg_match('/[a-z]/i', $question)) {
+        $scores['frustration'] += 2;
+    }
+
+    // Déterminer l'humeur avec le score le plus élevé
+    $highestMood = array_keys($scores, max($scores));
+
+    return $highestMood[0];
 }
 
 /**
@@ -578,45 +687,51 @@ function whatHookItIs($text) {
     <link href="style/help.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-    <nav>
-        <h1>Doli'Help</h1>
-        <ul>
-            <li></li>
-            <li></li>
-            <li></li>
-        </ul>
-    </nav>
-    <div class="help_main">
-        <div class="help_ctn">
-            <div class="help_warning">
-                <p>Toujours coder dans un module, il n'est pas conseillé de modifier le core de Dolibarr, une mise à jours de ce dernier et votre code disparait</p>
-                <p>Pour une question, commencez votre phrase par "Quel" ou "Quelle" et finissez la par "?"</p>
-            </div>
-                    
-            <div class="help_response">
-                <p>
-                     <?php if (!empty($response)):
-                    echo $response;
-                        ?>
-                    </p>
-                    <?php endif; ?>
-                </p>
-            </div>
-
-            <form action="" method="POST">
-                <div>
-                    <input type="text" name="help_input" placeholder="Message Doli'Help" value="<?php if(!empty($findPost)) : echo $findPost; endif ?>">
+    <div class="help_main_ctn">
+        <nav>
+            <h1>Doli'Help</h1>
+            <ul>
+                <li></li>
+                <li></li>
+                <li></li>
+            </ul>
+        </nav>
+        <div class="help_main">
+            <div class="help_ctn">
+                <div class="help_warning">
+                    <p>Toujours coder dans un module, il n'est pas conseillé de modifier le core de Dolibarr, une mise à jours de ce dernier et votre code disparait</p>
+                    <p>Pour une question, commencez votre phrase par "Quel" ou "Quelle" et finissez par "?"</p>
                 </div>
-                <input type="hidden" name="action" value="find">
-                <input type="submit" value="->">
-            </form>
+                        
+                <div class="help_response">
+                    <p>
+                        <?php if (!empty($response) && !empty($humeurtxt)): ?>
+                            <p>
+                                <?php echo $humeurtxt . ' ' . $response; ?>
+                            </p>
+                        <?php elseif (!empty($response)): ?>
+                            <p>
+                                <?php echo $response; ?>
+                            </p>
+                        <?php endif; ?>
+                    </p>
+                </div>
+
+                <form action="" method="POST">
+                    <div>
+                        <input type="text" name="help_input" placeholder="Message Doli'Help" value="<?php if(!empty($findPost)) : echo $findPost; endif ?>">
+                    </div>
+                    <input type="hidden" name="action" value="find">
+                    <input type="submit" value="->">
+                </form>
+            </div>
         </div>
     </div>
-
     <footer>
         <div class="help_footer">
             <p>Jonathanbtq Certified reserved</p>
         </div>
     </footer>
+    
 </body>
 </html>
